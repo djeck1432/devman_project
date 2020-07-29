@@ -46,23 +46,26 @@ async def get_result_text(api_key, task_id):
         return captcha_text
 
 async def solve_captcha(api_key,base64_image,max_time=20):
-    async with timeout(max_time) as cm:
-        start_time = monotonic()
-        task_id = await create_task_id(api_key, base64_image)
-        end_time = monotonic()
-        print(f'Create task id: {end_time-start_time}')
-        await asyncio.sleep(10)
+    try:
+        async with timeout(max_time) as cm:
+            start_time = monotonic()
+            task_id = await create_task_id(api_key, base64_image)
+            end_time = monotonic()
+            print(f'Create task id: {end_time-start_time}')
+            await asyncio.sleep(10)
 
-        start_time = monotonic()
-        result_text = await get_result_text(api_key, task_id)
-        if result_text is None:
-            await asyncio.sleep(5)
-            print('repeat result text')
+            start_time = monotonic()
             result_text = await get_result_text(api_key, task_id)
+            if result_text is None:
+                await asyncio.sleep(5)
+                print('repeat result text')
+                result_text = await get_result_text(api_key, task_id)
 
-        end_time = monotonic()
-        print(f'Get result: {end_time-start_time}')
-        print(result_text)
+            end_time = monotonic()
+            print(f'Get result: {end_time-start_time}')
+            print(result_text)
+    except asyncio.TimeoutError:
+        print('finish procces')
 
 
 
@@ -74,6 +77,8 @@ def fetch_image(path_examples,num):
     with open(f'new_examples/{path_examples[num]}', 'rb') as binary_file:
         base64_message = base64.b64encode(binary_file.read()).decode("utf-8")
         return base64_message
+
+
 #debugin  function
 async def main():
     load_dotenv()
