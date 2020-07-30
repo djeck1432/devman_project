@@ -46,6 +46,7 @@ async def get_result_text(api_key, task_id):
         return captcha_text
 
 async def solve_captcha(api_key,base64_image,max_time=20):
+    #TODO добавить аргумент в бинарном виде вместе base64_image
     try:
         async with timeout(max_time) as cm:
             start_time = monotonic()
@@ -72,9 +73,9 @@ async def solve_captcha(api_key,base64_image,max_time=20):
 
 
 #debugin function
-def fetch_image(path_examples,num):
+def fetch_image(path_example):
 
-    with open(f'new_examples/{path_examples[num]}', 'rb') as binary_file:
+    with open(f'new_examples/{path_example}', 'rb') as binary_file:
         base64_message = base64.b64encode(binary_file.read()).decode("utf-8")
         return base64_message
 
@@ -88,8 +89,8 @@ async def main():
 
 
     async with create_task_group() as captcha:
-        for num in range(amount):
-            base64_message = fetch_image(path_examples,num)
+        for path_example in path_examples:
+            base64_message = fetch_image(path_example)
             await captcha.spawn(solve_captcha,api_key,base64_message)
 
 
