@@ -27,7 +27,7 @@ async def create_task_id(api_key, base64_image):
     task_id = response.json()['taskId']
     return task_id
 
-async def get_result_text(api_key, task_id):
+async def get_captcha_text(api_key, task_id):
     url = 'https://api.anti-captcha.com/getTaskResult'
     headers = {
         'Accept': 'application/json',
@@ -45,22 +45,26 @@ async def get_result_text(api_key, task_id):
         captcha_text = captcha_solution['text']
         return captcha_text
 
-async def solve_captcha(api_key,base64_image,max_time=20):
-    #TODO добавить аргумент в бинарном виде вместе base64_image
+
+async def solve_captcha(api_key,base64_image,max_time=20,response_timeout=10):#FIXME
+    #TODO Отправлять каждую секудну запрос до получения позитивного ответа
     try:
         async with timeout(max_time) as cm:
             start_time = monotonic()
             task_id = await create_task_id(api_key, base64_image)
             end_time = monotonic()
             print(f'Create task id: {end_time-start_time}')
-            await asyncio.sleep(10)
+            #description, why here is sleep(5-10sec) read in the doc https://anticaptcha.atlassian.net/wiki/spaces/API/pages/196633
+            await asyncio.sleep(response_timeout)
 
             start_time = monotonic()
-            result_text = await get_result_text(api_key, task_id)
-            if result_text is None:
-                await asyncio.sleep(5)
-                print('repeat result text')
-                result_text = await get_result_text(api_key, task_id)
+            result_text = await get_captcha_text(api_key, task_id)
+            while True:
+                if result_text is not None:
+                    break
+                await asyncio.sleep(1)
+                print('repeat result text 1 ')
+                result_text = await get_captcha_text(api_key, task_id)
 
             end_time = monotonic()
             print(f'Get result: {end_time-start_time}')
@@ -85,7 +89,6 @@ async def main():
     load_dotenv()
     api_key = os.getenv('CAPTCHA_KEY')
     path_examples = os.listdir('new_examples')
-    amount = len(path_examples)
 
 
     async with create_task_group() as captcha:
